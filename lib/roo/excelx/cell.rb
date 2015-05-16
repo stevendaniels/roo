@@ -1,4 +1,7 @@
 require 'date'
+require 'roo/excelx/cell/base'
+require 'roo/excelx/cell/datetime'
+require 'roo/excelx/cell/date'
 
 module Roo
   class Excelx
@@ -28,6 +31,7 @@ module Roo
         end
       end
 
+      # Deprecated: use Roo::Excelx::Coordinate instead.
       class Coordinate
         attr_accessor :row, :column
 
@@ -58,14 +62,14 @@ module Roo
       def create_date(date)
         yyyy, mm, dd = date.strftime('%Y-%m-%d').split('-')
 
-        Date.new(yyyy.to_i, mm.to_i, dd.to_i)
+        ::Date.new(yyyy.to_i, mm.to_i, dd.to_i)
       end
 
       def create_datetime(date)
         datetime_string = date.strftime('%Y-%m-%d %H:%M:%S.%N')
         t = round_datetime(datetime_string)
 
-        DateTime.civil(t.year, t.month, t.day, t.hour, t.min, t.sec)
+        ::DateTime.civil(t.year, t.month, t.day, t.hour, t.min, t.sec)
       end
 
       def round_datetime(datetime_string)

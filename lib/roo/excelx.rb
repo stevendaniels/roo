@@ -10,6 +10,7 @@ module Roo
     autoload :Styles, 'roo/excelx/styles'
     autoload :Cell, 'roo/excelx/cell'
     autoload :Sheet, 'roo/excelx/sheet'
+    autoload :Coordinate, 'roo/excelx/coordinate'
 
     autoload :Relationships, 'roo/excelx/relationships'
     autoload :Comments, 'roo/excelx/comments'

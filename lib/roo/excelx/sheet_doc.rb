@@ -67,26 +67,34 @@ module Roo
         end
         formula = nil
         row, column = ::Roo::Utils.split_coordinate(cell_xml['r'])
+        coordinate = Excelx::Coordinate.new(row, column)
+
         cell_xml.children.each do |cell|
           case cell.name
           when 'is'
             cell.children.each do |inline_str|
               if inline_str.name == 't'
-                return Excelx::Cell.new(inline_str.content, :string, formula, :string, inline_str.content, style, hyperlink, @workbook.base_date, Excelx::Cell::Coordinate.new(row, column))
+                return Excelx::Cell.new(inline_str.content, :string, formula, :string, inline_str.content, style, hyperlink, @workbook.base_date, coordinate)
               end
             end
           when 'f'
             formula = cell.content
           when 'v'
+            excelx_type = [:numeric_or_formula, format.to_s]
+
             if [:time, :datetime].include?(value_type) && cell.content.to_f >= 1.0
-              value_type =
               if (cell.content.to_f - cell.content.to_f.floor).abs > 0.000001
-                :datetime
+                return Excelx::Cell::DateTime.new(cell.content, formula, excelx_type, style, hyperlink, @workbook.base_date, coordinate)
               else
-                :date
+                # TODO: no tests for these cells
+                puts '[TODO] date cell'
+                return Excelx::Cell::Date.new(cell.content, formula, excelx_type, style, hyperlink, @workbook.base_date, coordinate)
               end
             end
-            excelx_type = [:numeric_or_formula, format.to_s]
+
+            if value_type == :date
+              return Excelx::Cell::Date.new(cell.content, formula, excelx_type, style, hyperlink, @workbook.base_date, coordinate)
+            end
             value =
             case value_type
             when :shared
@@ -106,10 +114,11 @@ module Roo
               value_type = :float
               cell.content
             end
-            return Excelx::Cell.new(value, value_type, formula, excelx_type, cell.content, style, hyperlink, @workbook.base_date, Excelx::Cell::Coordinate.new(row, column))
+            return Excelx::Cell.new(value, value_type, formula, excelx_type, cell.content, style, hyperlink, @workbook.base_date, coordinate)
           end
         end
-        Excelx::Cell.new(nil, nil, nil, nil, nil, nil, nil, nil, Excelx::Cell::Coordinate.new(row, column))
+        # Excelx::Cell::Empty.new(coordinate)
+        Excelx::Cell.new(nil, nil, nil, nil, nil, nil, nil, nil, coordinate)
       end
 
       def extract_hyperlinks(relationships)
