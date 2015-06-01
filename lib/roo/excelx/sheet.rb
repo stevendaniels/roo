@@ -14,6 +14,7 @@ module Roo
       end
 
       def present_cells
+        # FIXME: use cell.empty?
         @present_cells ||= cells.select { |_, cell| cell && cell.value }
       end
 

@@ -1,7 +1,12 @@
 require 'date'
 require 'roo/excelx/cell/base'
+require 'roo/excelx/cell/boolean'
 require 'roo/excelx/cell/datetime'
 require 'roo/excelx/cell/date'
+require 'roo/excelx/cell/empty'
+require 'roo/excelx/cell/number'
+require 'roo/excelx/cell/string'
+require 'roo/excelx/cell/time'
 
 module Roo
   class Excelx
@@ -28,6 +33,15 @@ module Roo
           :link
         else
           @type
+        end
+      end
+
+      def self.create_cell(type, *values)
+        case type
+        when :string
+          Cell::String.new(*values)
+        when :boolean
+          Cell::Boolean.new(*values)
         end
       end
 
@@ -75,7 +89,7 @@ module Roo
       def round_datetime(datetime_string)
         /(?<yyyy>\d+)-(?<mm>\d+)-(?<dd>\d+) (?<hh>\d+):(?<mi>\d+):(?<ss>\d+.\d+)/ =~ datetime_string
 
-        Time.new(yyyy.to_i, mm.to_i, dd.to_i, hh.to_i, mi.to_i, ss.to_r).round(0)
+        ::Time.new(yyyy.to_i, mm.to_i, dd.to_i, hh.to_i, mi.to_i, ss.to_r).round(0)
       end
     end
   end

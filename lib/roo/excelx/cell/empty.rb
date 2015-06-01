@@ -5,7 +5,7 @@ module Roo
       class Empty < Cell::Base
         attr_reader :value, :formula, :format, :cell_type, :cell_value, :hyperlink, :coordinate
 
-        def initialize(coordinates)
+        def initialize(coordinate)
           @value = @formula = @format = @cell_type = @cell_value = @hyperlink = nil
           @coordinate = coordinate
         end

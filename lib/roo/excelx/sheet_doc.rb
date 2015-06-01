@@ -44,15 +44,8 @@ module Roo
 
       private
 
-      def cell_from_xml(cell_xml, hyperlink)
-        # This is error prone, to_i will silently turn a nil into a 0
-        # and it works by coincidence that Format[0] is general
-        style = cell_xml['s'].to_i   # should be here
-        # c: <c r="A5" s="2">
-        # <v>22606</v>
-        # </c>, format: , tmp_type: float
-        value_type =
-        case cell_xml['t']
+      def cell_value_type(type, format)
+        case type
         when 's'
           :shared
         when 'b'
@@ -62,66 +55,105 @@ module Roo
         when 'inlineStr'
           :inlinestr
         else
-          format = @styles.style_format(style)
           Excelx::Format.to_type(format)
         end
+      end
+
+      # Internal:
+      #
+      # cell_xml - a Nokogiri::XML::Element. e.g.
+      #             <c r="A5" s="2">
+      #               <v>22606</v>
+      #             </c>
+      # hyperlink - a String for the hyperlink for the cell or nil when no
+      #             hyperlink is present.
+      #
+      # Examples
+      #
+      #    cells_from_xml(<Nokogiri::XML::Element>, nil)
+      #    # => <Excelx::Cell::String>
+      #
+      # Returns a type of <Excelx::Cell>.
+      def cell_from_xml(cell_xml, hyperlink)
+        coordinate = extract_coordinate(cell_xml['r'])
+        return Excelx::Cell::Empty.new(coordinate) if cell_xml.children.empty?
+
+        # NOTE: This is error prone, to_i will silently turn a nil into a 0.
+        #       This works by coincidence because Format[0] is General.
+        style = cell_xml['s'].to_i
+        format = @styles.style_format(style)
+        value_type = cell_value_type(cell_xml['t'], format)
         formula = nil
-        row, column = ::Roo::Utils.split_coordinate(cell_xml['r'])
-        coordinate = Excelx::Coordinate.new(row, column)
 
         cell_xml.children.each do |cell|
           case cell.name
           when 'is'
             cell.children.each do |inline_str|
               if inline_str.name == 't'
-                return Excelx::Cell.new(inline_str.content, :string, formula, :string, inline_str.content, style, hyperlink, @workbook.base_date, coordinate)
+                return Excelx::Cell::String.new(inline_str.content, formula, :string, style, hyperlink, @workbook.base_date, coordinate)
               end
             end
           when 'f'
             formula = cell.content
           when 'v'
-            excelx_type = [:numeric_or_formula, format.to_s]
-
-            if [:time, :datetime].include?(value_type) && cell.content.to_f >= 1.0
-              if (cell.content.to_f - cell.content.to_f.floor).abs > 0.000001
-                return Excelx::Cell::DateTime.new(cell.content, formula, excelx_type, style, hyperlink, @workbook.base_date, coordinate)
-              else
-                # TODO: no tests for these cells
-                puts '[TODO] date cell'
-                return Excelx::Cell::Date.new(cell.content, formula, excelx_type, style, hyperlink, @workbook.base_date, coordinate)
-              end
-            end
-
-            if value_type == :date
-              return Excelx::Cell::Date.new(cell.content, formula, excelx_type, style, hyperlink, @workbook.base_date, coordinate)
-            end
-            value =
-            case value_type
-            when :shared
-              value_type = :string
-              excelx_type = :string
-              @shared_strings[cell.content.to_i]
-            when :boolean
-              (cell.content.to_i == 1 ? 'TRUE' : 'FALSE')
-            when :date, :time, :datetime
-              cell.content
-            when :formula
-              cell.content.to_f
-            when :string
-              excelx_type = :string
-              cell.content
-            else
-              value_type = :float
-              cell.content
-            end
-            return Excelx::Cell.new(value, value_type, formula, excelx_type, cell.content, style, hyperlink, @workbook.base_date, coordinate)
+            return create_cell_from_value(value_type, cell, formula, format, style, hyperlink, @workbook.base_date, coordinate)
           end
         end
-        # Excelx::Cell::Empty.new(coordinate)
-        Excelx::Cell.new(nil, nil, nil, nil, nil, nil, nil, nil, coordinate)
+      end
+
+      def create_cell_from_value(value_type, cell, formula, format, style, hyperlink, base_date, coordinate)
+        # TODO: This can probably be removed. If that's the case
+        excelx_type = [:numeric_or_formula, format.to_s]
+
+        # TODO: cleanup and use to reate cells. it
+        # NOTE: there are only a few situations where value != cell.content
+        #       1. when a sharedString is used. value = sharedString;
+        #          cell.content = id of sharedString
+        #       2. boolean cells: value = 'TRUE' | 'FALSE'; cell.content = '0' | '1';
+        #          In truth, I'd prefer a boolean cell that used TRUE|FALSE
+        #          as the formatted value and an actual Boolean as the value.
+        #       3. formula
+        # FIXME: don't need base_date or excelx_type
+        case value_type
+        when :shared
+          # FIXME: Doesn't need base_date
+          value = @shared_strings[cell.content.to_i]
+          excelx_type = :string
+          return Excelx::Cell.create_cell(:string, value, formula, excelx_type, style, hyperlink, nil, coordinate)
+        when :string
+          # FIXME: Doesn't need base_date
+          value = cell.content
+          excelx_type = :string
+          return Excelx::Cell.create_cell(value_type, value, formula, excelx_type, style, hyperlink, base_date, coordinate)
+        when :boolean, :string
+          # FIXME: Don't need base_date
+          value = cell.content
+          return Excelx::Cell.create_cell(value_type, value, formula, excelx_type, style, hyperlink, base_date, coordinate)
+        when :time, :datetime
+          cell_content = cell.content.to_f
+          if cell_content < 1.0
+            return Excelx::Cell::Time.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
+          elsif  (cell_content - cell_content.floor).abs > 0.000001
+            return Excelx::Cell::DateTime.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
+          else
+            return Excelx::Cell::Date.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
+          end
+        when :date
+          return Excelx::Cell::Date.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
+        else
+          # FIXME: Doesn't need base_date
+          return Excelx::Cell::Number.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
+        end
+      end
+
+      def extract_coordinate(coordinate)
+        row, column = ::Roo::Utils.split_coordinate(coordinate)
+
+        Excelx::Coordinate.new(row, column)
       end
 
       def extract_hyperlinks(relationships)
+        # FIXME: select the valid hyperlinks and then map those.
         Hash[doc.xpath('/worksheet/hyperlinks/hyperlink').map do |hyperlink|
           if hyperlink.attribute('id') && (relationship = relationships[hyperlink.attribute('id').text])
             [::Roo::Utils.ref_to_key(hyperlink.attributes['ref'].to_s), relationship.attribute('Target').text]

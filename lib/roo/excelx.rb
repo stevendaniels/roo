@@ -261,6 +261,7 @@ module Roo
       sheet = sheet_for(sheet)
       key = normalize(row, col)
       cell = sheet.cells[key]
+      # FIXME: use cell.empty?
       !cell || !cell.value || (cell.type == :string && cell.value.empty?) \
       || (row < sheet.first_row || row > sheet.last_row || col < sheet.first_column || col > sheet.last_column)
     end
@@ -473,6 +474,8 @@ module Roo
       end
     end
 
+    # NOTE: To reduce memory, styles, shared_strings, workbook can be class
+    #       variables in a Shared module.
     def styles
       @styles ||= Styles.new(File.join(@tmpdir, 'roo_styles.xml'))
     end

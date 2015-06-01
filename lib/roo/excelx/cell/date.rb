@@ -5,6 +5,7 @@ module Roo
     class Cell
       class Date < Cell::Base
         attr_reader :value, :formula, :format, :cell_type, :cell_value, :link, :coordinate
+
         def initialize(value, formula, excelx_type, style, link, base_date, coordinates)
           super
           @type = :date

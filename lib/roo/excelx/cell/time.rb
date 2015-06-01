@@ -1,15 +1,25 @@
 require 'date'
-
+# TODO: add tests for formatted_value
+# TODO: add test for formula?
+# TODO: add tests for hyperlink?
+# TODO: add tests for cell::DateTime that are independent of spreadsheets.
 module Roo
   class Excelx
     class Cell
-      class DateTime < Cell::Base
+      class Time < DateTime
         attr_reader :value, :formula, :format, :cell_value, :link, :coordinate
-        def initialize(value, formula, excelx_type, style, link, base_date, coordinate)
+
+        def initialize(value, formula, excelx_type, style, link, base_date, coordinates)
           super
-          @type = :datetime
+          @type = :time
           @format = excelx_type.last
-          @value = link? ? Roo::Link.new(link, value) : create_datetime(base_date, value)
+          @datetime = create_datetime(base_date, value)
+          @value = link? ? Roo::Link.new(link, value) : (value.to_f * 86_400).to_i
+        end
+
+        def formatted_value
+          formatter = @format.gsub(/#{formats.keys.join('|')}/, formats)
+          @datetime.strftime(formatter)
         end
 
         alias_method :to_s, :formatted_value
