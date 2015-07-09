@@ -14,7 +14,9 @@ module Roo
       attr_reader :type, :formula, :value, :excelx_type, :excelx_value, :style, :hyperlink, :coordinate
       attr_writer :value
 
+      # DEPRECATED: Please use Cell.create_cell instead.
       def initialize(value, type, formula, excelx_type, excelx_value, style, hyperlink, base_date, coordinate)
+        warn '[DEPRECATION] `Cell.new` is deprecated.  Please use `Cell.create_cell` instead.'
         @type = type
         @formula = formula
         @base_date = base_date if [:date, :datetime].include?(@type)
@@ -43,6 +45,14 @@ module Roo
           Cell::String.new(*values)
         when :boolean
           Cell::Boolean.new(*values)
+        when :number
+          Cell::Number.new(*values)
+        when :date
+          Cell::Date.new(*values)
+        when :datetime
+          Cell::DateTime.new(*values)
+        when :time
+          Cell::Time.new(*values)
         end
       end
 
@@ -51,6 +61,7 @@ module Roo
         attr_accessor :row, :column
 
         def initialize(row, column)
+          warn '[DEPRECATION] `Roo::Excel::Cell::Coordinate` is deprecated.  Please use `Roo::Excelx::Coordinate` instead.'
           @row, @column = row, column
         end
       end

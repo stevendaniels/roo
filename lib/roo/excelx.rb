@@ -13,6 +13,8 @@ module Roo
     require 'roo/excelx/relationships'
     require 'roo/excelx/comments'
     require 'roo/excelx/sheet_doc'
+    require 'roo/excelx/coordinate'
+
     module Format
       EXCEPTIONAL_FORMATS = {
         'h:mm am/pm' => :date,

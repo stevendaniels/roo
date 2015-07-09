@@ -46,20 +46,20 @@ module Roo
 
       def cell_value_type(type, format)
         case type
-        when 's'
+        when 's'.freeze
           :shared
-        when 'b'
+        when 'b'.freeze
           :boolean
-        when 'str'
+        when 'str'.freeze
           :string
-        when 'inlineStr'
+        when 'inlineStr'.freeze
           :inlinestr
         else
           Excelx::Format.to_type(format)
         end
       end
 
-      # Internal:
+      # Internal: Creates a cell based on an XML clell..
       #
       # cell_xml - a Nokogiri::XML::Element. e.g.
       #             <c r="A5" s="2">
@@ -90,7 +90,7 @@ module Roo
           when 'is'
             cell.children.each do |inline_str|
               if inline_str.name == 't'
-                return Excelx::Cell::String.new(inline_str.content, formula, :string, style, hyperlink, @workbook.base_date, coordinate)
+                return Excelx::Cell.create_cell(:string, inline_str.content, formula, style, hyperlink, coordinate)
               end
             end
           when 'f'
@@ -102,47 +102,40 @@ module Roo
       end
 
       def create_cell_from_value(value_type, cell, formula, format, style, hyperlink, base_date, coordinate)
-        # TODO: This can probably be removed. If that's the case
+        # NOTE: format.to_s can replace excelx_type as an argument for
+        #       Cell::Time, Cell::DateTime, Cell::Date or Cell::Number, but
+        #       it will break some brittle tests.
         excelx_type = [:numeric_or_formula, format.to_s]
 
-        # TODO: cleanup and use to reate cells. it
-        # NOTE: there are only a few situations where value != cell.content
+        # NOTE: There are only a few situations where value != cell.content
         #       1. when a sharedString is used. value = sharedString;
         #          cell.content = id of sharedString
         #       2. boolean cells: value = 'TRUE' | 'FALSE'; cell.content = '0' | '1';
-        #          In truth, I'd prefer a boolean cell that used TRUE|FALSE
-        #          as the formatted value and an actual Boolean as the value.
+        #          But a boolean cell should use TRUE|FALSE as the formatted value
+        #          and use a Boolean for it's value. Using a Boolean value breaks
+        #          Roo::Base#to_csv.
         #       3. formula
-        # FIXME: don't need base_date or excelx_type
         case value_type
         when :shared
-          # FIXME: Doesn't need base_date
           value = @shared_strings[cell.content.to_i]
-          excelx_type = :string
-          return Excelx::Cell.create_cell(:string, value, formula, excelx_type, style, hyperlink, nil, coordinate)
-        when :string
-          # FIXME: Doesn't need base_date
-          value = cell.content
-          excelx_type = :string
-          return Excelx::Cell.create_cell(value_type, value, formula, excelx_type, style, hyperlink, base_date, coordinate)
+          Excelx::Cell.create_cell(:string, value, formula, style, hyperlink, coordinate)
         when :boolean, :string
-          # FIXME: Don't need base_date
           value = cell.content
-          return Excelx::Cell.create_cell(value_type, value, formula, excelx_type, style, hyperlink, base_date, coordinate)
+          Excelx::Cell.create_cell(value_type, value, formula, style, hyperlink, coordinate)
         when :time, :datetime
           cell_content = cell.content.to_f
-          if cell_content < 1.0
-            return Excelx::Cell::Time.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
-          elsif  (cell_content - cell_content.floor).abs > 0.000001
-            return Excelx::Cell::DateTime.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
-          else
-            return Excelx::Cell::Date.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
-          end
+          cell_type = if cell_content < 1.0
+                        :time
+                      elsif (cell_content - cell_content.floor).abs > 0.000001
+                        :datetime
+                      else
+                        :date
+                      end
+          Excelx::Cell.create_cell(cell_type, cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
         when :date
-          return Excelx::Cell::Date.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
+          Excelx::Cell.create_cell(value_type, cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
         else
-          # FIXME: Doesn't need base_date
-          return Excelx::Cell::Number.new(cell.content, formula, excelx_type, style, hyperlink, base_date, coordinate)
+          Excelx::Cell.create_cell(:number, cell.content, formula, excelx_type, style, hyperlink, coordinate)
         end
       end
 
@@ -195,47 +188,6 @@ module Roo
           return dimension.attributes['ref'].value
         end
       end
-
-=begin
-Datei xl/comments1.xml
-  <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-  <comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-    <authors>
-      <author />
-    </authors>
-    <commentList>
-      <comment ref="B4" authorId="0">
-        <text>
-          <r>
-            <rPr>
-              <sz val="10" />
-              <rFont val="Arial" />
-              <family val="2" />
-            </rPr>
-            <t>Kommentar fuer B4</t>
-          </r>
-        </text>
-      </comment>
-      <comment ref="B5" authorId="0">
-        <text>
-          <r>
-            <rPr>
-            <sz val="10" />
-            <rFont val="Arial" />
-            <family val="2" />
-          </rPr>
-          <t>Kommentar fuer B5</t>
-        </r>
-      </text>
-    </comment>
-  </commentList>
-  </comments>
-=end
-=begin
-    if @comments_doc[self.sheets.index(sheet)]
-      read_comments(sheet)
-    end
-=end
     end
   end
 end
