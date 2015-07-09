@@ -1,10 +1,28 @@
-## [Unreleased] - Unreleased
+## [Unreleased][unreleased]
 ### Added
-- Offset option for excelx #each_row. [#214](https://github.com/roo-rb/roo/pull/214)
+- Added support for Excel 2007 `xlsm` files. [#232](https://github.com/roo-rb/roo/pull/232)
+- Roo::Excelx returns an enumerator when calling each_row_streaming without a block. [#224](https://github.com/roo-rb/roo/pull/224)
+- Returns an enumerator when calling `each` without a block. [#219](https://github.com/roo-rb/roo/pull/219)
 
 ### Fixed
+- Removed tabs and windows CRLF. [#235](https://github.com/roo-rb/roo/pull/235), [#234](https://github.com/roo-rb/roo/pull/234)
+- Fixed Regexp to only check for valid URI's when opening a spreadsheet. [#229](https://github.com/roo-rb/roo/pull/228)
+- Open streams in Roo:Excelx correctly. [#222](https://github.com/roo-rb/roo/pull/222)
+
+## [2.0.1] - 2015-06-01
+### Added
+- Return an enumerator when calling '#each' without a block [#219](https://github.com/roo-rb/roo/pull/219)
+- Added Roo::Base#close to delete any temp directories[#211](https://github.com/roo-rb/roo/pull/211)
+- Offset option for excelx #each_row. [#214](https://github.com/roo-rb/roo/pull/214)
+- Allow Roo::Excelx to open streams [#209](https://github.com/roo-rb/roo/pull/209)
+
+### Fixed
+- Use gsub instead of tr for double quote escaping [#212](https://github.com/roo-rb/roo/pull/212),  [#212-patch](https://github.com/roo-rb/roo/commit/fcc9a015868ebf9d42cbba5b6cfdaa58b81ecc01)
 - Fixed Changelog links and release data. [#204](https://github.com/roo-rb/roo/pull/204), [#206](https://github.com/roo-rb/roo/pull/206)
 - Allow Pathnames to be used when opening files. [#207](https://github.com/roo-rb/roo/pull/207)
+
+### Removed
+- Removed the scripts folder. [#213](https://github.com/roo-rb/roo/pull/213)
 
 ## [2.0.0] - 2015-04-24
 ### Added
@@ -457,7 +475,7 @@
 
 ## [0.2.4] - 2007-06-16
 ### Fixed
-- ID 11605	Two cols with same value: crash roo (openoffice version only)
+- ID 11605  Two cols with same value: crash roo (openoffice version only)
 
 ## [0.2.3] - 2007-06-02
 ### Changed / Added

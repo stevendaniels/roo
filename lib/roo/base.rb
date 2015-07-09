@@ -352,21 +352,25 @@ class Roo::Base
   # control characters and white spaces around columns
 
   def each(options = {})
-    if options.empty?
-      1.upto(last_row) do |line|
-        yield row(line)
+    if block_given?
+      if options.empty?
+        1.upto(last_row) do |line|
+          yield row(line)
+        end
+      else
+        clean_sheet_if_need(options)
+        search_or_set_header(options)
+        headers = @headers ||
+                  Hash[(first_column..last_column).map do |col|
+                    [cell(@header_line, col), col]
+                  end]
+
+        @header_line.upto(last_row) do |line|
+          yield(Hash[headers.map { |k, v| [k, cell(line, v)] }])
+        end
       end
     else
-      clean_sheet_if_need(options)
-      search_or_set_header(options)
-      headers = @headers ||
-                Hash[(first_column..last_column).map do |col|
-                  [cell(@header_line, col), col]
-                end]
-
-      @header_line.upto(last_row) do |line|
-        yield(Hash[headers.map { |k, v| [k, cell(line, v)] }])
-      end
+      to_enum(:each, options)
     end
   end
 
@@ -397,25 +401,26 @@ class Roo::Base
 
   protected
 
-  def file_type_check(filename, ext, name, warning_level, packed = nil)
+  def file_type_check(filename, exts, name, warning_level, packed = nil)
     if packed == :zip
-      # lalala.ods.zip => lalala.ods
-      # hier wird KEIN unzip gemacht, sondern nur der Name der Datei
-      # getestet, falls es eine gepackte Datei ist.
+      # spreadsheet.ods.zip => spreadsheet.ods
+      # Decompression is not performed here, only the 'zip' extension
+      # is removed from the file.
       filename = File.basename(filename, File.extname(filename))
     end
 
     if uri?(filename) && qs_begin = filename.rindex('?')
       filename = filename[0..qs_begin - 1]
     end
-    if File.extname(filename).downcase != ext
+    exts = Array(exts)
+    if !exts.include?(File.extname(filename).downcase)
       case warning_level
       when :error
-        warn file_type_warning_message(filename, ext)
+        warn file_type_warning_message(filename, exts)
         fail TypeError, "#{filename} is not #{name} file"
       when :warning
         warn "are you sure, this is #{name} spreadsheet file?"
-        warn file_type_warning_message(filename, ext)
+        warn file_type_warning_message(filename, exts)
       when :ignore
         # ignore
       else
@@ -477,10 +482,12 @@ class Roo::Base
     filename
   end
 
-  def file_type_warning_message(filename, ext)
-    "use #{Roo::CLASS_FOR_EXTENSION.fetch(ext.sub('.', '').to_sym)}.new to handle #{ext} spreadsheet files. This has #{File.extname(filename).downcase}"
+  def file_type_warning_message(filename, exts)
+    *rest, last_ext = exts
+    ext_list = rest.any? ? "#{rest.join(', ')} or #{last_ext}" : last_ext
+    "use #{Roo::CLASS_FOR_EXTENSION.fetch(last_ext.sub('.', '').to_sym)}.new to handle #{ext_list} spreadsheet files. This has #{File.extname(filename).downcase}"
   rescue KeyError
-    raise "unknown file type: #{ext}"
+    raise "unknown file types: #{ext_list}"
   end
 
   def find_by_row(row_index)
@@ -682,11 +689,11 @@ class Roo::Base
 
     case celltype(row, col, sheet)
     when :string
-      %("#{onecell.tr('"', '""')}") unless onecell.empty?
+      %("#{onecell.gsub('"', '""')}") unless onecell.empty?
     when :boolean
       # TODO: this only works for excelx
       onecell = self.sheet_for(sheet).cells[[row, col]].formatted_value
-      %("#{onecell.tr('"', '""').downcase}")
+      %("#{onecell.gsub('"', '""').downcase}")
     when :float, :percentage
       if onecell == onecell.to_i
         onecell.to_i.to_s
@@ -696,7 +703,7 @@ class Roo::Base
     when :formula
       case onecell
       when String
-        %("#{onecell.tr('"', '""')}") unless onecell.empty?
+        %("#{onecell.gsub('"', '""')}") unless onecell.empty?
       when Float
         if onecell == onecell.to_i
           onecell.to_i.to_s
@@ -713,11 +720,10 @@ class Roo::Base
     when :time
       integer_to_timestring(onecell)
     when :link
-      %("#{onecell.url.tr('"', '""')}")
+      %("#{onecell.url.gsub('"', '""')}")
     else
       fail "unhandled celltype #{celltype(row, col, sheet)}"
     end || ''
-    # end
   end
 
   # converts an integer value to a time string like '02:05:06'

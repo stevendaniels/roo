@@ -1,21 +1,18 @@
 require 'nokogiri'
+require 'zip/filesystem'
 require 'roo/link'
 require 'roo/utils'
-require 'zip/filesystem'
 
 module Roo
   class Excelx < Roo::Base
-    autoload :Workbook, 'roo/excelx/workbook'
-    autoload :SharedStrings, 'roo/excelx/shared_strings'
-    autoload :Styles, 'roo/excelx/styles'
-    autoload :Cell, 'roo/excelx/cell'
-    autoload :Sheet, 'roo/excelx/sheet'
-    autoload :Coordinate, 'roo/excelx/coordinate'
-
-    autoload :Relationships, 'roo/excelx/relationships'
-    autoload :Comments, 'roo/excelx/comments'
-    autoload :SheetDoc, 'roo/excelx/sheet_doc'
-
+    require 'roo/excelx/workbook'
+    require 'roo/excelx/shared_strings'
+    require 'roo/excelx/styles'
+    require 'roo/excelx/cell'
+    require 'roo/excelx/sheet'
+    require 'roo/excelx/relationships'
+    require 'roo/excelx/comments'
+    require 'roo/excelx/sheet_doc'
     module Format
       EXCEPTIONAL_FORMATS = {
         'h:mm am/pm' => :date,
@@ -23,34 +20,34 @@ module Roo
       }
 
       STANDARD_FORMATS = {
-        0 => 'General',
-        1 => '0',
-        2 => '0.00',
-        3 => '#,##0',
-        4 => '#,##0.00',
-        9 => '0%',
-        10 => '0.00%',
-        11 => '0.00E+00',
-        12 => '# ?/?',
-        13 => '# ??/??',
-        14 => 'mm-dd-yy',
-        15 => 'd-mmm-yy',
-        16 => 'd-mmm',
-        17 => 'mmm-yy',
-        18 => 'h:mm AM/PM',
-        19 => 'h:mm:ss AM/PM',
-        20 => 'h:mm',
-        21 => 'h:mm:ss',
-        22 => 'm/d/yy h:mm',
-        37 => '#,##0 ;(#,##0)',
-        38 => '#,##0 ;[Red](#,##0)',
-        39 => '#,##0.00;(#,##0.00)',
-        40 => '#,##0.00;[Red](#,##0.00)',
-        45 => 'mm:ss',
-        46 => '[h]:mm:ss',
-        47 => 'mmss.0',
-        48 => '##0.0E+0',
-        49 => '@'
+        0 => 'General'.freeze,
+        1 => '0'.freeze,
+        2 => '0.00'.freeze,
+        3 => '#,##0'.freeze,
+        4 => '#,##0.00'.freeze,
+        9 => '0%'.freeze,
+        10 => '0.00%'.freeze,
+        11 => '0.00E+00'.freeze,
+        12 => '# ?/?'.freeze,
+        13 => '# ??/??'.freeze,
+        14 => 'mm-dd-yy'.freeze,
+        15 => 'd-mmm-yy'.freeze,
+        16 => 'd-mmm'.freeze,
+        17 => 'mmm-yy'.freeze,
+        18 => 'h:mm AM/PM'.freeze,
+        19 => 'h:mm:ss AM/PM'.freeze,
+        20 => 'h:mm'.freeze,
+        21 => 'h:mm:ss'.freeze,
+        22 => 'm/d/yy h:mm'.freeze,
+        37 => '#,##0 ;(#,##0)'.freeze,
+        38 => '#,##0 ;[Red](#,##0)'.freeze,
+        39 => '#,##0.00;(#,##0.00)'.freeze,
+        40 => '#,##0.00;[Red](#,##0.00)'.freeze,
+        45 => 'mm:ss'.freeze,
+        46 => '[h]:mm:ss'.freeze,
+        47 => 'mmss.0'.freeze,
+        48 => '##0.0E+0'.freeze,
+        49 => '@'.freeze
       }
 
       def to_type(format)
@@ -91,7 +88,7 @@ module Roo
       sheet_options[:expand_merged_ranges] = (options[:expand_merged_ranges] || false)
 
       unless is_stream?(filename_or_stream)
-        file_type_check(filename_or_stream, '.xlsx', 'an Excel-xlsx', file_warning, packed)
+        file_type_check(filename_or_stream, %w[.xlsx .xlsm], 'an Excel 2007', file_warning, packed)
         basename = File.basename(filename_or_stream)
       end
 
@@ -324,7 +321,12 @@ module Roo
     # Yield an array of Excelx::Cell
     # Takes options for sheet, pad_cells, and max_rows
     def each_row_streaming(options = {})
-      sheet_for(options.delete(:sheet)).each_row(options) { |row| yield row }
+      sheet = sheet_for(options.delete(:sheet))
+      if block_given?
+        sheet.each_row(options) { |row| yield row }
+      else
+        sheet.to_enum(:each_row, options)
+      end
     end
 
     private
@@ -412,19 +414,13 @@ module Roo
       @sheet_files = []
 
       unless is_stream?(zipfilename_or_stream)
-        process_zipfile_entries Zip::File.open(zipfilename_or_stream).to_a.sort_by(&:name)
+        zip_file = Zip::File.open(zipfilename_or_stream)
       else
-        stream = Zip::InputStream.open zipfilename_or_stream
-        begin
-          entries = []
-          while (entry = stream.get_next_entry)
-            entries << entry
-          end
-          process_zipfile_entries entries
-        ensure
-          stream.close
-        end
+        zip_file = Zip::CentralDirectory.new
+        zip_file.read_from_stream zipfilename_or_stream
       end
+
+      process_zipfile_entries zip_file.to_a.sort_by(&:name)
     end
 
     def process_zipfile_entries(entries)
