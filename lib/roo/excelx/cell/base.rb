@@ -2,39 +2,38 @@ module Roo
   class Excelx
     class Cell
       class Base
-        # TODO: cells can update their value. That messes up everything you are trying to do. setting a new value means
-        #       creating a new cell. Not a fan.
+        attr_reader :cell_type, :cell_value, :value
 
-        # NOTE: The main advantage to splitting Cell into cell_type classes is to
-        #       allow each class to better format it's values.
+        # FIXME: I think style should be deprecated. Having a style attribute
+        #        for a cell doesn't really accomplish much. It seems to be used
+        #        when you want to export to excelx.
+        attr_reader :style
+
+
+        # FIXME: Updating a cell's value should be able tochange the cell's type,
+        #        but that isn't currently possible. This will cause weird bugs
+        #        when one changes the value of a Number cell to a String. e.g.
         #
-        #       Previously cell values were calculated by `Cell#type_cast_value`,
-        #       but the methods did not always cast a value as expected (e.g.
-        #       Integers were cast as Floats).
+        #           cell = Cell::Number(*args)
+        #           cell.value = 'Hello'
+        #           cell.formatted_value # => Some unexpected value
         #
-        #       Additionally, cells have an `excelx_value` method which contained
-        #       a string representation of the original value of the cell.
+        #        Here are two possible solutions to such issues:
+        #        1. Don't allow a cell's value to be updated. Use a method like
+        #          `Sheet.update_cell` instead. The simple solution.
+        #        2. When `cell.value = ` is called, use injection to try and
+        #           change the type of cell on the fly. But deciding what type
+        #           of value to pass to `cell.value=`. isn't always obvious. e.g.
+        #           `cell.value = Time.now` should convert a cell to a DateTime,
+        #           not a Time cell. Time cells would be hard to recognize because
+        #           they are integers. This approach would require a significant
+        #           change to the code as written. The complex solution.
         #
-        #       The new cell type classes keeps excelx_value as an alias to
-        #       cell_value. Cell value is intended to be a method that can be
-        #       used regardless of what kind of spreadsheet is being used. For
-        #       cells using SharedStrings, an `excelx_value` now returns the
-        #       string (it previously returns the index for the SharedString).
-        #
-        #       The new cell classes will also add a `formatted_value` method.
-        #       This method returns a String representation of the display value
-        #       seen in a spreadsheet program. These formatted values should
-        #       probably be used when exporting to csv.
-        #
-        #       Finally, the original `value` method will be upgraded to better
-        #       match the type of the value. Cell::Numbers will return an
-        #       Integer or Float depending what type of number the value should
-        #       be. Cell::Booleans will return a Boolean. (One exception:
-        #       Cell::Time will continue to return seconds since midnight.)
-        attr_reader :cell_type, :cell_value
+        #        If the first solution is used, then this method should be
+        #        deprecated.
         attr_writer :value
 
-        def initialize(value, formula, excelx_type, style, link, base_date, coordinate)
+        def initialize(value, formula, excelx_type, style, link, coordinate)
           @link = !!link
           @cell_value = value
           @cell_type = excelx_type
@@ -42,6 +41,7 @@ module Roo
           @style = style
           @coordinate = coordinate
           @type = :base
+          @value = link? ? Roo::Link.new(link, value) : value
         end
 
         def type
@@ -64,7 +64,6 @@ module Roo
 
         def formatted_value
           formatter = @format.gsub(/#{formats.keys.join('|')}/, formats)
-          puts formatter
           @value.strftime(formatter)
         end
 
@@ -87,12 +86,6 @@ module Roo
           cell_type
         end
 
-        # NOTE: having a style attribute for a cell doesn't really accomplish
-        #       much. Unless you want to export to excelx.
-        def style
-          @style
-        end
-
         def empty?
           false
         end
@@ -101,7 +94,7 @@ module Roo
 
         def formats
           {
-            # FIXME: missing formats for AD/BC and milliseconds.
+            # FIXME: missing formats that include AD/BC or milliseconds.
             'yyyy' => '%Y', # 2000
             'yy' => '%y',
             'MMMM' => '%B',
@@ -117,7 +110,7 @@ module Roo
             'mm' => '%M',
             'ss' => '%S',
             'am/pm' => '%p',
-            '\\\\' => '', # NOTE: Fixes output for custom formats.
+            '\\\\' => '', # NOTE: Fixes a custom format's output.
           }
         end
       end
