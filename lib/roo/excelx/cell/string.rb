@@ -4,14 +4,11 @@ module Roo
       class String < Cell::Base
         attr_reader :value, :formula, :format, :cell_type, :cell_value, :link, :coordinate
 
-        def initialize(value, formula, excelx_type, style, link, base_date, coordinate)
-          super
-          @type = :string
-          @format = excelx_type
+        def initialize(value, formula, style, link, coordinate)
+          super(value, formula, nil, style, link, coordinate)
+          @type = @cell_type = :string
           @value = link? ? Roo::Link.new(link, value) : value
         end
-
-        alias_method :formatted_value, :value
 
         def empty?
           value.empty?
