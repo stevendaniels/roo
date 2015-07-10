@@ -62,12 +62,11 @@ module Roo
           !!@link
         end
 
-        def formatted_value
-          formatter = @format.gsub(/#{formats.keys.join('|')}/, formats)
-          @value.strftime(formatter)
-        end
+        alias_method :formatted_value, :value
 
-        alias_method :to_s, :formatted_value
+        def to_s
+          formatted_value
+        end
 
         # DEPRECATED: Please use link instead.
         def hyperlink
