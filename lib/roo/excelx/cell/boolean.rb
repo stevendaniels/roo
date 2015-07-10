@@ -4,15 +4,14 @@ module Roo
       class Boolean < Cell::Base
         attr_reader :value, :formula, :format, :cell_type, :cell_value, :link, :coordinate
 
-        def initialize(value, formula, excelx_type, style, link, base_date, coordinates)
-          super
-          @type = :boolean
-          @format = excelx_type.last
+        def initialize(value, formula, style, link, coordinate)
+          super(value, formula, nil, style, link, coordinate)
+          @type = @cell_type = :boolean
           @value = link? ? Roo::Link.new(link, value) : create_boolean(value)
         end
 
         def formatted_value
-          value == 1 ? 'TRUE' : 'FALSE'
+          value == 1 ? 'TRUE'.freeze : 'FALSE'.freeze
         end
 
         private
