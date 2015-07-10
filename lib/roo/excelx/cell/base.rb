@@ -88,30 +88,6 @@ module Roo
         def empty?
           false
         end
-
-        private
-
-        def formats
-          {
-            # FIXME: missing formats that include AD/BC or milliseconds.
-            'yyyy' => '%Y', # 2000
-            'yy' => '%y',
-            'MMMM' => '%B',
-            'MMM' => '%b',
-            'MM' => '%m',
-            'M' => '%-m',
-            'dddd' => '%A', # Sunday
-            'ddd' => '%a', # Sun
-            'dd' => '%d',
-            'd' => '%-d',
-            'hh' => '%H',
-            'h' => '%-l',
-            'mm' => '%M',
-            'ss' => '%S',
-            'am/pm' => '%p',
-            '\\\\' => '', # NOTE: Fixes a custom format's output.
-          }
-        end
       end
     end
   end
