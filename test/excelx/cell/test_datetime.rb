@@ -2,11 +2,6 @@ require 'date'
 require 'roo/excelx/cell/base'
 require 'roo/excelx/cell/datetime'
 require 'roo/link'
-require 'pry'
-
-# TODO
-# Look at formulas in excel - does not work with date/time
-# attr_reader :cell_value, :formula, :format, :hyperlink, :coordinate
 
 class TestRooExcelxCellDateTime < Minitest::Test
   def test_cell_value_is_datetime
@@ -26,6 +21,17 @@ class TestRooExcelxCellDateTime < Minitest::Test
       ['d-mmm ', '25-JAN'],
       ['mmm-yy', 'JAN-15'],
       ['m/d/yy h:mm', '1/25/15 8:15']
+    ].each do |format, formatted_value|
+      cell = datetime.new '42029.34375', nil, [format], nil, nil, base_date, nil
+      assert_equal formatted_value, cell.formatted_value
+    end
+  end
+
+  def test_custom_formatted_value
+    [
+      ['yyyy/mm/dd hh:mm:ss', '2015/01/25 08:15:00'],
+      ['h:mm:ss000 mm/yy', '8:15:00000 01/15'],
+      ['mmm yyy', '2015-01-25 08:15:00']
     ].each do |format, formatted_value|
       cell = datetime.new '42029.34375', nil, [format], nil, nil, base_date, nil
       assert_equal formatted_value, cell.formatted_value
