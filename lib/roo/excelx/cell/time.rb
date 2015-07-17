@@ -1,15 +1,13 @@
 require 'date'
-# TODO: add tests for formatted_value
-# TODO: add test for formula?
-# TODO: add tests for hyperlink?
-# TODO: add tests for cell::DateTime that are independent of spreadsheets.
+
 module Roo
   class Excelx
     class Cell
-      class Time < DateTime
+      class Time < Roo::Excelx::Cell::DateTime
         attr_reader :value, :formula, :format, :cell_value, :link, :coordinate
 
-        def initialize(value, formula, excelx_type, style, link, base_date, coordinates)
+        def initialize(value, formula, excelx_type, style, link, base_date, coordinate)
+          # NOTE: Pass all arguments to DateTime super class.
           super
           @type = :time
           @format = excelx_type.last
@@ -18,7 +16,7 @@ module Roo
         end
 
         def formatted_value
-          formatter = @format.gsub(/#{formats.keys.join('|')}/, formats)
+          formatter = @format.gsub(/#{TIME_FORMATS.keys.join('|')}/, TIME_FORMATS)
           @datetime.strftime(formatter)
         end
 

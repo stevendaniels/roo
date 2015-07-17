@@ -74,12 +74,12 @@ module Roo
           'mm'.freeze => '%M'.freeze,    # Minute: 01
           # FIXME: is this used? Seems like 'm' is used for month, not minute.
           'm'.freeze => '%-M'.freeze,    # Minute: 1
-          's'.freeze => '%-S'.freeze,    # Seconds: 1
           'ss'.freeze => '%S'.freeze,    # Seconds: 01
+          's'.freeze => '%-S'.freeze,    # Seconds: 1
           'am/pm'.freeze => '%p'.freeze, # Meridian: AM
-          '0'.freeze => '%1N'.freeze,    # Fractional Seconds: tenths.
-          '00'.freeze => '%2N'.freeze,   # Fractional Seconds: hundredth.
           '000'.freeze => '%3N'.freeze,  # Fractional Seconds: thousandth.
+          '00'.freeze => '%2N'.freeze,   # Fractional Seconds: hundredth.
+          '0'.freeze => '%1N'.freeze,    # Fractional Seconds: tenths.
         }
 
         def create_datetime(base_date, value)
