@@ -1161,8 +1161,8 @@ Sheet 3:
   def test_cell_boolean
     with_each_spreadsheet(:name=>'boolean', :format=>[:openoffice, :excelx]) do |oo|
       if oo.class == Roo::Excelx
-        assert_equal 1, oo.cell(1, 1), "failure in #{oo.class}"
-        assert_equal 0, oo.cell(2, 1), "failure in #{oo.class}"
+        assert_equal true, oo.cell(1, 1), "failure in #{oo.class}"
+        assert_equal false, oo.cell(2, 1), "failure in #{oo.class}"
 
         cell = oo.sheet_for(oo.default_sheet).cells[[1, 1,]]
         assert_equal 'TRUE', cell.formatted_value

@@ -11,7 +11,7 @@ module Roo
         end
 
         def formatted_value
-          value == 1 ? 'TRUE'.freeze : 'FALSE'.freeze
+          value ? 'TRUE'.freeze : 'FALSE'.freeze
         end
 
         private
@@ -19,7 +19,7 @@ module Roo
         def create_boolean(value)
           # FIXME: Using a boolean will cause methods like Base#to_csv to fail.
           #       Roo is using some method to ignore false/nil values.
-          value.to_i == 1 ? 1 : 0
+          value.to_i == 1 ? true : false
         end
       end
     end

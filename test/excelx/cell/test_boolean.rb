@@ -29,7 +29,6 @@ class TestRooExcelxCellNumber < Minitest::Test
   end
 
   def test_value
-    skip
     cell = boolean.new '1', nil, nil, nil, nil
     assert_equal true, cell.value
 
