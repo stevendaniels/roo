@@ -14,8 +14,7 @@ module Roo
       end
 
       def present_cells
-        # FIXME: use cell.empty?
-        @present_cells ||= cells.select { |_, cell| cell && cell.value }
+        @present_cells ||= cells.select { |_, cell| cell && !cell.empty? }
       end
 
       # Yield each row as array of Excelx::Cell objects

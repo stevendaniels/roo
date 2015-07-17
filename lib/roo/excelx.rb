@@ -260,9 +260,8 @@ module Roo
       sheet = sheet_for(sheet)
       key = normalize(row, col)
       cell = sheet.cells[key]
-      # FIXME: use cell.empty?
-      !cell || !cell.value || (cell.type == :string && cell.value.empty?) \
-      || (row < sheet.first_row || row > sheet.last_row || col < sheet.first_column || col > sheet.last_column)
+      !cell || cell.empty? || (cell.type == :string && cell.value.empty?) ||
+        (row < sheet.first_row || row > sheet.last_row || col < sheet.first_column || col > sheet.last_column)
     end
 
     # shows the internal representation of all cells
