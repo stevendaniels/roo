@@ -15,14 +15,14 @@ module Roo
     #        I don't know the historical reasons for the Roo::Link, but right now
     #        it seems uneccessary. I'm in favor of keeping it just in case.
     #
-    #        I'm in favor of passing the cell's value to Roo::Link. It would
+    #        I'm also in favor of passing the cell's value to Roo::Link. The
     #        cell.value's class would still be Roo::Link, but the value itself
     #        would depend on what type of cell it is (Numeric, Date, etc.).
     #
     attr_reader :href
-    alias :url :href
+    alias_method :url, :href
 
-    def initialize(href='', text=href)
+    def initialize(href = '', text = href)
       super(text)
       @href = href
     end

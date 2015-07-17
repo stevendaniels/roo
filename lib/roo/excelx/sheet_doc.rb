@@ -124,6 +124,15 @@ module Roo
           Excelx::Cell.create_cell(value_type, value, formula, style, hyperlink, coordinate)
         when :time, :datetime
           cell_content = cell.content.to_f
+          # NOTE: A date will be a whole number. A time will have be > 1. And
+          #      in general, a datetime will have decimals. But if the cell is
+          #      using a custom format, it's possible to be interpreted incorrectly.
+          #      cell_content.to_i == cell_content && standard_style?=> :date
+          #
+          #      Should check to see if the format is standard or not. If it's a
+          #      standard format, than it's a date, otherwise, it is a datetime.
+          #      @styles.standard_style?(style_id)
+          #      STANDARD_STYLES.keys.include?(style_id.to_i)
           cell_type = if cell_content < 1.0
                         :time
                       elsif (cell_content - cell_content.floor).abs > 0.000001
