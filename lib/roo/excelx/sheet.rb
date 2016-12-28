@@ -51,21 +51,30 @@ module Roo
 
       # returns the number of the first non-empty row
       def first_row
-        @first_row ||= present_cells.keys.map { |row, _| row }.min
+        return nil if present_cells.empty?
+
+        @first_row ||= present_cells.keys.min_by { |row, _| row }.first
       end
 
+      # returns the number of the last non-empty row
       def last_row
-        @last_row ||= present_cells.keys.map { |row, _| row }.max
+        return nil if present_cells.empty?
+
+        @last_row ||= present_cells.keys.max_by { |row, _| row }.first
       end
 
       # returns the number of the first non-empty column
       def first_column
-        @first_column ||= present_cells.keys.map { |_, col| col }.min
+        return nil if present_cells.empty?
+
+        @first_column ||= present_cells.keys.min_by { |_, col| col }.last
       end
 
       # returns the number of the last non-empty column
       def last_column
-        @last_column ||= present_cells.keys.map { |_, col| col }.max
+        return nil if present_cells.empty?
+
+        @last_column ||= present_cells.keys.max_by { |_, col| col }.last
       end
 
       def excelx_format(key)
